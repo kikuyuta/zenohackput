@@ -1,0 +1,27 @@
+// zenohd と同じディレクトリにプラグインの共有ライブラリを置いておけば、
+// 下記の plugins.storage_manager 設定を見て自動でロードされる。
+// 配布物: https://github.com/eclipse-zenoh/zenoh/releases
+{
+  mode: "router",
+
+  // クライアント側 (このリポジトリの scripts/, test/) は client モードで
+  // tcp/127.0.0.1:7447 に接続する想定。
+  listen: {
+    endpoints: ["tcp/0.0.0.0:7447"],
+  },
+
+  plugins: {
+    storage_manager: {
+      volumes: {
+        // インメモリ volume。プロセス再起動なしで動いている限り値を保持する。
+        memory: {},
+      },
+      storages: {
+        zenohackput_demo: {
+          key_expr: "zenohackput/**",
+          volume: "memory",
+        },
+      },
+    },
+  },
+}
