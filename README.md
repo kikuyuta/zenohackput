@@ -63,11 +63,16 @@ zenohd -c zenohd_storage.json5
 ```
 
 ```sh
-# 素の put/get で stale read が起こることを再現する
+# 素の put/get で stale read (古い値が返る) が起こることを再現する
 mix run scripts/put_get_race.exs [iterations]
 
 # open→put→close でも解決しないことを確認する
 mix run scripts/put_close_race.exs [iterations]
+
+# 一度も put されたことのないキーへの get はハードエラーになることを再現し、
+# ZenohAckPut.put はその状況でも書き込んだ本人が読み返す分には問題ない
+# ことを確認する
+mix run scripts/get_on_unpublished_key.exs
 
 # ZenohAckPut.put が stale read を解消することを確認する
 mix run scripts/ack_put_verify.exs [iterations]
