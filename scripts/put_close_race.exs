@@ -1,16 +1,17 @@
-# put_get_race.exs の追加実験。
+# A follow-up experiment to put_get_race.exs.
 #
-# 「同じセッションで put した直後に get する」のではなく、
-# 「毎回 open → put → close して、書き込み用セッションを完全に閉じてから
-#   (別の読み取り専用セッションで) get する」パターンでも stale read が
-# 起こるかどうかを検証する (close はローカルの送信バッファを掃かせるだけで、
-# リモートの storage が反映し終えたことの確認にはならない、という仮説の検証)。
+# Instead of "put then get on the same session", this checks whether the
+# stale-read problem still occurs with "open -> put -> close the writer
+# session entirely, then get from a separate reader session" on every
+# iteration. (This tests the hypothesis that close() only flushes the
+# local send buffer and does not confirm that the remote storage has
+# actually applied the write.)
 #
-# 事前に zenohd_storage.json5 でルーターを起動しておくこと:
+# First, start a router with zenohd_storage.json5:
 #
 #     zenohd -c zenohd_storage.json5
 #
-# 実行:
+# Run:
 #
 #     mix run scripts/put_close_race.exs [iterations]
 

@@ -1,11 +1,11 @@
-// zenohd と同じディレクトリにプラグインの共有ライブラリを置いておけば、
-// 下記の plugins.storage_manager 設定を見て自動でロードされる。
-// 配布物: https://github.com/eclipse-zenoh/zenoh/releases
+// Drop the plugin shared library next to the zenohd binary and it will be
+// auto-loaded based on the plugins.storage_manager config below.
+// Releases: https://github.com/eclipse-zenoh/zenoh/releases
 {
   mode: "router",
 
-  // クライアント側 (このリポジトリの scripts/, test/) は client モードで
-  // tcp/127.0.0.1:7447 に接続する想定。
+  // Clients (this repo's scripts/ and test/) are expected to connect in
+  // client mode to tcp/127.0.0.1:7447.
   listen: {
     endpoints: ["tcp/0.0.0.0:7447"],
   },
@@ -13,7 +13,8 @@
   plugins: {
     storage_manager: {
       volumes: {
-        // インメモリ volume。プロセス再起動なしで動いている限り値を保持する。
+        // In-memory volume. Values are kept only as long as this process
+        // keeps running.
         memory: {},
       },
       storages: {

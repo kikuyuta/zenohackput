@@ -1,19 +1,18 @@
-# put_get_race.exs / put_close_race.exs は「古い値が返ってきてしまう」
-# (stale read) パターンの再現だったが、これは別のパターン: 一度も put
-# されたことのないキーに get すると、`{:ok, []}` ではなく
-# `{:error, "... channel is empty and closed"}` というハードエラーに
-# なることがある、という現象の再現。
+# put_get_race.exs / put_close_race.exs reproduce the "stale read" pattern
+# (an old value comes back). This script reproduces a different pattern:
+# a get against a key that has never been put can return a hard error
+# (`{:error, "... channel is empty and closed"}`) instead of `{:ok, []}`.
 #
-# 素の Zenohex.Session.get はこれをそのままエラーとして返すが、
-# ZenohAckPut.put はこの状況でもクラッシュせず (内部の get 失敗を
-# "まだ確認できていない" として扱い put 後にリトライするだけなので)、
-# 書き込んだ本人が読み返す分には問題なく :ok を返すことを確認する。
+# Plain Zenohex.Session.get just returns that error as-is, but
+# ZenohAckPut.put doesn't crash on it (any get failure inside its confirm
+# loop is treated as "not confirmed yet" and simply retried), so it still
+# returns :ok as long as the same process reads back what it just wrote.
 #
-# 事前に zenohd_storage.json5 でルーターを起動しておくこと:
+# First, start a router with zenohd_storage.json5:
 #
 #     zenohd -c zenohd_storage.json5
 #
-# 実行:
+# Run:
 #
 #     mix run scripts/get_on_unpublished_key.exs
 

@@ -1,11 +1,12 @@
-# Zenoh の put/get だけを使って「put 直後の get が古い値を読んでしまう」
-# 現象を再現・観測するスクリプト (ZenohAckPut を作った動機の再現)。
+# Reproduces and observes, using only Zenoh's put/get, the phenomenon
+# where a get right after a put reads back a stale (old) value.
+# (This is the motivating reproduction behind ZenohAckPut.)
 #
-# 事前に zenohd_storage.json5 でルーターを起動しておくこと:
+# First, start a router with zenohd_storage.json5:
 #
 #     zenohd -c zenohd_storage.json5
 #
-# 実行:
+# Run:
 #
 #     mix run scripts/put_get_race.exs [iterations]
 

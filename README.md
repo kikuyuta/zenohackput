@@ -1,18 +1,20 @@
 # ZenohAckPut
 
-`Zenohex.Session.put/4` は fire-and-forget で、ローカルの送信キューに載せた
-時点で `:ok` を返す。リモートの storage (queryable) が実際に値を反映し
-終えたことまでは保証しない。Elixir の GenServer で言えば、`put` は `cast`、
-`get` は `call` に相当する非対称性がある。
+`Zenohex.Session.put/4` is fire-and-forget: it returns `:ok` as soon as the
+message is handed off to the local send queue. It does not guarantee that
+the remote storage (queryable) has actually applied the write yet. In
+Elixir/GenServer terms, `put` behaves like `cast` while `get` behaves like
+`call` — an asymmetry between the two.
 
-このリポジトリは、この非対称性が実際に観測できることをスクリプトで再現した
-上で (`scripts/put_get_race.exs`)、put の直後に同じ key へ get して
-read-after-write を確認してから返る `ZenohAckPut.put/5` を提供する。
+This repository reproduces that asymmetry with a script
+(`scripts/put_get_race.exs`), and provides `ZenohAckPut.put/5`, which issues
+a `get` against the same key right after `put` and only returns once the
+write can be read back (read-after-write confirmation).
 
-参考: [eclipse-zenoh/zenoh#2511 — "\[Design\] Acknowledged put: confirmed
+See also: [eclipse-zenoh/zenoh#2511 — "\[Design\] Acknowledged put: confirmed
 storage writes via query path vs protocol extension"](https://github.com/eclipse-zenoh/zenoh/issues/2511)
-(まだ Open。`ZenohAckPut` はこの issue の Approach A を、プロトコル変更なしに
-アプリケーション層で自前実装したもの)
+(still open as of this writing). `ZenohAckPut` is an application-layer,
+no-protocol-changes implementation of that issue's "Approach A".
 
 ## Installation
 
@@ -31,57 +33,57 @@ end
 
 case ZenohAckPut.put(session_id, "key/expr", "payload") do
   :ok ->
-    # put が成功し、read-after-write の確認も取れた
+    # put succeeded and the read-after-write confirmation succeeded too
     :ok
 
   {:error, :not_confirmed} ->
-    # put 自体は成功したが、confirm_timeout_ms 以内に確認が取れなかった
+    # put itself succeeded, but confirmation didn't land within confirm_timeout_ms
     :error
 
   {:error, reason} ->
-    # Zenohex.Session.put/4 自体が失敗した
+    # Zenohex.Session.put/4 itself failed
     :error
 end
 ```
 
-確認まわりの挙動はオプションで調整できる:
+The confirmation behavior can be tuned via options:
 
 ```elixir
 ZenohAckPut.put(session_id, "key/expr", "payload", [], 
-  confirm_timeout_ms: 3_000,  # 確認をリトライし続ける合計時間
-  confirm_interval_ms: 1,     # リトライ間隔
-  query_timeout_ms: 3_000     # 確認用の各 get 呼び出し自体のタイムアウト
+  confirm_timeout_ms: 3_000,  # total time budget to keep retrying confirmation
+  confirm_interval_ms: 1,     # retry interval
+  query_timeout_ms: 3_000     # timeout for each individual confirmation get call
 )
 ```
 
-## 現象の再現・検証スクリプト
+## Reproduction and verification scripts
 
-事前に、このリポジトリに同梱の `zenohd_storage.json5` でルーターを起動する:
+First, start a router with the `zenohd_storage.json5` bundled in this repo:
 
 ```sh
 zenohd -c zenohd_storage.json5
 ```
 
 ```sh
-# 素の put/get で stale read (古い値が返る) が起こることを再現する
+# Reproduce the stale-read problem (a get right after put returns an old value)
 mix run scripts/put_get_race.exs [iterations]
 
-# open→put→close でも解決しないことを確認する
+# Show that open→put→close doesn't solve it either
 mix run scripts/put_close_race.exs [iterations]
 
-# 一度も put されたことのないキーへの get はハードエラーになることを再現し、
-# ZenohAckPut.put はその状況でも書き込んだ本人が読み返す分には問題ない
-# ことを確認する
+# Reproduce the hard error you get from a get on a key that was never put,
+# and show that ZenohAckPut.put still confirms fine as long as the same
+# process reads back what it just wrote
 mix run scripts/get_on_unpublished_key.exs
 
-# ZenohAckPut.put が stale read を解消することを確認する
+# Show that ZenohAckPut.put eliminates the stale-read problem
 mix run scripts/ack_put_verify.exs [iterations]
 ```
 
 ## Test
 
 ```sh
-zenohd -c zenohd_storage.json5   # 別ターミナルで起動しておく
+zenohd -c zenohd_storage.json5   # run this in another terminal first
 mix deps.get
 mix test
 ```

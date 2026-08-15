@@ -1,11 +1,11 @@
-# ZenohAckPut.put/3 が put_get_race.exs で観測される stale read を
-# 実際に解消するかを検証するスクリプト。
+# Verifies that ZenohAckPut.put/3 actually eliminates the stale reads
+# observed by put_get_race.exs.
 #
-# 事前に zenohd_storage.json5 でルーターを起動しておくこと:
+# First, start a router with zenohd_storage.json5:
 #
 #     zenohd -c zenohd_storage.json5
 #
-# 実行:
+# Run:
 #
 #     mix run scripts/ack_put_verify.exs [iterations]
 
