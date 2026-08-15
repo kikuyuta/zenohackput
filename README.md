@@ -18,10 +18,12 @@ no-protocol-changes implementation of that issue's "Approach A".
 
 ## Installation
 
+This package is not published on Hex yet. Add it as a git dependency:
+
 ```elixir
 def deps do
   [
-    {:zenohackput, "~> 0.1.0"}
+    {:zenohackput, git: "https://github.com/kikuyuta/zenohackput.git"}
   ]
 end
 ```
